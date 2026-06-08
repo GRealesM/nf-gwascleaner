@@ -65,7 +65,7 @@ process SORT_GWAS {
     tag "${meta.study_id}"
     
     // This will be the ONLY folder that saves our final, polished files
-    publishDir "${params.outdir}/MVP_Final_GWAS", mode: 'copy'
+    publishDir "${params.outdir}/Final_GWAS", mode: 'copy'
 
     input:
     tuple val(meta), path(gwas_file)
