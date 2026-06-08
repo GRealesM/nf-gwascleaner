@@ -73,8 +73,8 @@ Nextflow will automatically isolate process execution profiles, dynamically down
 Clone the repository:
 
 ``` bash
-git clone git@github.com:your_username/gwas-clean-pipeline.git
-cd gwas-clean-pipeline
+git clone git@github.com:GRealesM/nf-gwascleaner.git
+cd nf-gwascleaner
 ``` 
 Configure your inputs in nextflow.config or supply them directly as command-line arguments:
 
