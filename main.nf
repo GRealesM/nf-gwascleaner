@@ -174,7 +174,7 @@ workflow {
 
     // View final completion
     sorted_ch.view { meta, final_file ->
-        "🎉 MVP SUCCESS: Processing complete -> ${final_file.name}"
+        "SUCCESS: Processing complete -> ${final_file.name}"
     }
     
 }

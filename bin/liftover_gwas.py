@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--chain', required=True)
     parser.add_argument('--liftover', default='liftOver')
     parser.add_argument('--output', required=True)
-    parser.add_argument('--log', required=True) # New required argument
+    parser.add_argument('--log', required=True)
     args = parser.parse_args()
 
     open_in = gzip.open if args.input.endswith('.gz') else open
