@@ -2,65 +2,59 @@
 
 An automated, low-footprint Nextflow pipeline designed to ingest, quality-control, standardise, liftover, and coordinate-sort heterogeneous GWAS summary statistics into an analysis-ready format.
 
----
-
-## 🧬 Overview
-
-Genetic association data from repositories like the GWAS Catalog come in an array of column formats, coordinate systems, and header nomenclatures. Pre-processing these files manually for downstream analyses (like Polygenic Risk Score generation, LD-Score Regression, or fine-mapping) is time-consuming and error-prone.
-
-This pipeline provides a unified, automated, and streaming architecture that dynamically assesses raw GWAS files in multiple genome builds and produces standardised **hg38** datasets.
+Last updated: 2026-06-08
+Current version: **v1 prototype (Minimum Viable Product)**. 
 
 ---
 
-## 🚀 Key Features
+## Overview
 
+Genome-wide association analyses (GWAS) summary statistics are one of the workhorses of modern medical genetics. These flat text files contain results for marginal by-variant association tests, with multiple downstream research applications, such as polygenic risk scores, LD-score regression, fine-mapping, and functional genomics integration. GWAS summary statistics come in an array of column formats, coordinate systems, and header nomenclatures, and manually pre-processing them is time-consuming and error-prone.
 
-* **Single-Pass Streaming ETL:** Modifying columns, computing metrics, and rewriting massive (10M+ row) data files in separate steps strains standard hardware I/O. The `STANDARDISE` process handles string manipulation, renaming, formatting, and mathematical conversions in an $O(N)$ streaming loop with an absolute minimal memory footprint.
-* **Smart Parameter Inspection:** The pipeline runs an initial lightweight `INSPECTOR` process that checks file delimiters, maps heterogeneous headers using a built-in alias dictionary, tracks missing data ratios across a 500,000-line lookup, and infers the active genome build via coordinate overlaps against a built-in manifest.
-* **Robust LiftOver Integration:** Standard implementations of UCSC `liftOver` can drop or scramble variants if duplicated RSIDs or structural variations are encountered in the 4th column of a standard BED file. This pipeline completely side-steps this issue by dynamically using internal row-indices as ephemeral BED identifiers, translating the coordinates, and seamlessly re-merging them back into the data stream.
-* **Memory-Safe Coordinate Sorting:** Sorting millions of genomic coordinates in memory (e.g., via standard Python or R dataframes) can easily crash standard laptops or limited HPC nodes. This pipeline offloads sorting to native Linux `sort` optimized using an external merge-sort routine (`LC_ALL=C`), placing chromosomes (`1-22`, `X`, `Y`, `MT`) and numerical base-pairs in flawless physical sequence with zero memory overhead.
+This pipeline provides a unified, automated, and streaming architecture that dynamically assesses raw GWAS files in multiple genome builds and in different formats and produces standardised and anlysis-ready **hg38** datasets, setting them up for modern genomic databases. This is the Nextflow DSL2 version (and future expansion track) of the bash/R GWAS tools processing pipeline ([GWAS_tools](https://github.com/GRealesM/GWAS_tools)).
 
 ---
 
-## 🛠️ Pipeline Roadmap & Scope
+## Pipeline Roadmap & Scope
 
-This repository represents a functional **v1 prototype (Minimum Viable Product)**. It is purpose-built for basic structural harmonisation but deliberately leaves complex biological filtering to downstream workflows.
+`nf-gwascleaner` is purpose-built for basic structural GWAS summary statistic harmonisation.
 
 ### What It Does:
-* Renames heterogeneous headers to unified terminology (`CHR`, `BP`, `SNPID`, `REF`, `ALT`, `BETA`, `SE`, `P`).
+* Renames heterogeneous headers to unified terminology 
+    - `CHR` = Chromosome, 
+    - `BP`  = Position (base pairs)
+    - `SNPID` = Variant ID (eg. rsid), 
+    - `REF` = Reference allele, 
+    - `ALT` = Effect allele (to which beta/OR refer to),
+    - `BETA` = Effect size (log(OR)), 
+    - `SE` = Standard error, 
+    - `P` = P-value
+* Check minimum information exist to derive the above columns if any missing (see below).
+* Checks for missing data in key columns (`BETA`/`OR`, and `SE`) and stops if above a threshold (Default: 50%). 
 * Splits unified `CPRA` (Chrom:Pos:Ref:Alt) strings into separate core columns if structural coordinate columns are missing.
 * Reconstructs missing `SNPID` headers from clean `CHR:BP` strings when variant IDs are missing.
-* Derives missing `BETA` columns dynamically from Odds Ratios (`log(OR)`).
+* Derives missing `BETA` columns dynamically from Odds Ratios (OR).
 * Computes missing Standard Errors (`SE`) from `BETA` and `P-value` using an inverse normal distribution survival function.
 * Computes missing `P-values` backwards from `BETA` and `SE`.
 * Automatically upgrades `hg18` and `hg19` builds to `hg38` coordinates.
 * Generates persistent `.tsv` quality reports listing files that failed QC thresholds or tracking variant drop rates during liftOver.
 
-### What It Cannot Do (Out of Scope for v1):
+> ⚠️ **A Crucial Note on REF/ALT Assignment**
+> While every effort has been made to capture all historical variations of effect (to which the beta/OR refers) and reference alleles encoding, edge cases exist. For instance, nomenclatures like `A1/A2` are notorious: `A1` represents the effect allele (ALT) in some consortia but denotes the reference allele (REF) in others. 
+> 
+> To ensure absolute analytical safety, **users are strongly encouraged to double-check their allele columns.** If in doubt, manually rename your raw columns to `REF` (for reference) and `ALT` (for effect allele) before running the pipeline. Check `bin/inspect_gwas.py` for how `nf-gwascleaner` interprets each column name.
+
+
+### What It Cannot Do (yet):
 * **Allele Alignment / Strand Flipping:** It does not align alleles against a reference genome sequence (e.g., checking for triallelic sites, matching to the positive strand, or resolving ambiguous A/T or C/G SNPs).
 * **Imputation / Fine-Mapping:** It does not infer missing genotypes or calculate linkage disequilibrium.
 * **Sample Size / Frequency Imputation:** It passes through available allele frequencies (`ALT_FREQ`) and sample sizes (`N`) but does not infer them if missing.
 
+
 ---
 
-## 📊 Directory Structure
+## Prerequisites & Dependencies
 
-```text
-gwas-clean-pipeline/
-├── main.nf                 # Main Nextflow pipeline orchestrator
-├── nextflow.config         # Runtime configuration & Conda environment controls
-├── assets/
-│   ├── Manifest_build_translator.tsv  # Reference list for genome build sniffing
-│   ├── hg18ToHg38.over.chain.gz       # UCSC LiftOver chain file
-│   └── hg19ToHg38.over.chain.gz       # UCSC LiftOver chain file
-├── bin/                    # Scripts automatically injected into the environment $PATH
-│   ├── inspect_gwas.py
-│   ├── standardise_gwas.py
-│   └── liftover_gwas.py
-└── .gitignore
-```
-
-## ⚙️ Prerequisites & Dependencies
 Software infrastructure is natively managed by Nextflow. You do not need to manually install dependencies like scipy or liftOver on your host environment.
 
 - Nextflow (DSL2 compatible)
@@ -68,7 +62,7 @@ Software infrastructure is natively managed by Nextflow. You do not need to manu
 
 Nextflow will automatically isolate process execution profiles, dynamically download the required version of ucsc-liftover from bioconda, and isolate Python library environments seamlessly behind the scenes.
 
-## 💻 Usage
+## Installation & Usage
 
 Clone the repository:
 
@@ -84,14 +78,13 @@ nextflow run main.nf \
   --outdir /path/to/results/
 ```
 
-To resume a failed run or process additional files without re-computing past steps, harness Nextflow's caching engine:
+To resume a failed run or process additional files without re-computing past steps, you can harness Nextflow's caching engine:
 
 ```bash
 nextflow run main.nf -resume
 ```
 
-### 💻 System Compatibility Notice (Windows Users)
-
+**System capability notice**
 This pipeline relies on native Unix process execution architectures and optimized Linux binaries (such as GNU `sort`). 
 
 * **macOS / Linux:** Fully supported out of the box.
@@ -107,7 +100,7 @@ conda create -n gwas-clean-local python=3.14 scipy=1.17.1 -c conda-forge
 conda activate gwas-clean-local
 ```
 
-## 📈 Quality & Operational Reports
+## Quality & Operational Reports
 
 The pipeline isolates corrupted inputs using automated routing boundaries. If a file displays over 50% missing data in critical parameters or completely lacks the minimum attributes required for standardisation, the file is routed into a graceful soft-fail state.
 
@@ -119,9 +112,18 @@ Centralized audit reports are dynamically written to the output workspace:
 
 Finished outputs are compiled uniformly in `results/Final_GWAS/`.
 
-## 🗺️ Roadmap (Future Version Enhancements)
-[ ] Add extra options for specific liftover transformations
+## Roadmap (Future Version Enhancements)
 
-[ ] Add tools to address further issues that GWAS summary statistics files may come with.
+[ ] Add extra liftover options for specific target builds (eg. hg19, T2T)
+
+[ ] Add tools to address further formatting issues that GWAS summary statistics files may come with.
+
+[ ] Add option to set custom NA threshold limit.
+
+[ ] Add option for linear to log(OR) scaling in case-control datasets (will require N0 and N1 numbers to be supplied).
+
+[ ] Add option adjust sdY for quantitative datasets, such that variance = 1 (useful for integration of multiple quantitative GWAS summary statistics).
 
 [ ] Integrate native Docker/Singularity container configurations alongside Conda profiles for enterprise cloud scaling.
+
+[ ] Expanded QC reports to check files beyond formatting.
