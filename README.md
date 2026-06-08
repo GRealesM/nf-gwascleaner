@@ -1,7 +1,4 @@
-# nf-gwascleaner
-A tool to process GWAS summary statistics into a single format using Nextflow
-
-# GWAS Clean Pipeline (v1.0.0-prototype)
+# nf-gwascleaner - A Nextflow GWAS summary statistics cleaner pipeline (v1.0.0-prototype)
 
 An automated, low-footprint Nextflow pipeline designed to ingest, quality-control, standardise, liftover, and coordinate-sort heterogeneous GWAS summary statistics into an analysis-ready format.
 
