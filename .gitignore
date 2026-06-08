@@ -1,0 +1,32 @@
+# --- Nextflow Work and Pipeline Internal Directories ---
+work/
+.nextflow/
+.nextflow.log*
+
+# --- Heavy Intermediate and Output Data ---
+# Blocks the results directory so we don't push gigabytes of output to GitHub
+results/
+
+# --- Raw GWAS Data ---
+# Blocks massive input folder and any random uncompressed TSVs
+raw_data/
+*.tsv
+*.csv
+*.txt
+*.gz
+
+# --- Local Environments & Hidden System Files ---
+.conda/
+.direnv/
+venv/
+.venv/
+.DS_Store
+Thumbs.db
+
+# --- Whitelist / Force Track Essential Assets ---
+# This overrides the rules above to guarantee your critical metadata and 
+# testing assets are ALWAYS tracked by Git, even if they end in .tsv or .gz
+!assets/Manifest_build_translator.tsv
+!assets/*.over.chain.gz
+!test_data/
+!test_data/**
