@@ -97,6 +97,16 @@ This pipeline relies on native Unix process execution architectures and optimize
 * **macOS / Linux:** Fully supported out of the box.
 * **Windows 10/11:** **Not supported natively** via CMD or PowerShell. Windows users must run this pipeline inside **Windows Subsystem for Linux (WSL)** (Ubuntu 22.04 LTS or later recommended) with Conda/Mamba configured within the WSL environment.
 
+### 🐍 Running Scripts Natively (Optional)
+
+Software environments are fully automated by Nextflow during execution. However, if you wish to run or test the underlying Python core utilities inside `bin/` directly from your command line, ensure your local environment utilizes a matching footprint:
+
+```bash
+# Explicitly matching the prototype development environment
+conda create -n gwas-clean-local python=3.14 scipy=1.17.1 -c conda-forge
+conda activate gwas-clean-local
+```
+
 ## 📈 Quality & Operational Reports
 
 The pipeline isolates corrupted inputs using automated routing boundaries. If a file displays over 50% missing data in critical parameters or completely lacks the minimum attributes required for standardisation, the file is routed into a graceful soft-fail state.
