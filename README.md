@@ -3,6 +3,7 @@
 An automated, low-footprint Nextflow pipeline designed to ingest, quality-control, standardise, liftover, and coordinate-sort heterogeneous GWAS summary statistics into an analysis-ready format.
 
 Last updated: 2026-06-08
+
 Current version: **v1 prototype (Minimum Viable Product)**. 
 
 ---
